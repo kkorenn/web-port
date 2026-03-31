@@ -1,0 +1,1224 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>School Arcade Hub</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Bebas+Neue&display=swap");
+
+      :root {
+        --paper: #f6f4ee;
+        --ink: #0f1e3d;
+        --ink-soft: #33446e;
+        --accent: #0ea5a4;
+        --accent-2: #ff7a40;
+        --line: rgba(15, 30, 61, 0.16);
+        --panel: rgba(255, 255, 255, 0.72);
+        --player-max-height: 76vh;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--ink);
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at 10% -10%, rgba(14, 165, 164, 0.22), transparent 46%),
+          radial-gradient(circle at 90% 0%, rgba(255, 122, 64, 0.2), transparent 34%),
+          linear-gradient(180deg, #f9f8f2 0%, #f2efe5 100%);
+      }
+
+      .page {
+        width: min(3200px, 100% - 2rem);
+        margin: 1rem auto 2rem;
+      }
+
+      .top {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        padding-bottom: 1rem;
+        animation: rise 420ms ease both;
+      }
+
+      .brand {
+        font-family: "Bebas Neue", "Impact", sans-serif;
+        letter-spacing: 0.08em;
+        margin: 0;
+        font-size: clamp(2rem, 5vw, 3.3rem);
+        line-height: 1;
+        cursor: pointer;
+        user-select: none;
+        transition: opacity 170ms ease;
+      }
+
+      .brand:hover {
+        opacity: 0.82;
+      }
+
+      .brand:focus-visible {
+        outline: 2px solid rgba(14, 165, 164, 0.78);
+        outline-offset: 6px;
+        border-radius: 6px;
+      }
+
+      .top-actions {
+        display: flex;
+        gap: 0.55rem;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .top-actions .action-btn {
+        min-width: 112px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(15, 30, 61, 0.94);
+      }
+
+      .top-actions .action-btn.is-disabled {
+        opacity: 0.5;
+        pointer-events: none;
+      }
+
+      .shell {
+        margin-top: 1rem;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      .shell.has-player {
+        grid-template-columns: 1fr;
+      }
+
+      .shell.has-player .player {
+        order: 1;
+      }
+
+      .shell.has-player .library {
+        order: 2;
+        min-height: unset;
+      }
+
+      .library,
+      .player {
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        overflow: hidden;
+        background: var(--panel);
+        backdrop-filter: blur(4px);
+      }
+
+      .library {
+        display: flex;
+        flex-direction: column;
+        min-height: 76vh;
+      }
+
+      .library-top {
+        padding: 1rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .library-sections {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .section-btn {
+        appearance: none;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.85);
+        color: var(--ink);
+        font: inherit;
+        font-size: 0.84rem;
+        font-weight: 600;
+        padding: 0.45rem 0.78rem;
+        cursor: pointer;
+      }
+
+      .section-btn.active {
+        background: rgba(15, 30, 61, 0.95);
+        color: #fff;
+        border-color: rgba(15, 30, 61, 0.95);
+      }
+
+      .tools {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 0.6rem;
+      }
+
+      .tools input,
+      .tools button,
+      .action-btn {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        font: inherit;
+        padding: 0.62rem 0.72rem;
+      }
+
+      .tools input {
+        background: rgba(255, 255, 255, 0.95);
+      }
+
+      .tools button,
+      .action-btn {
+        background: var(--ink);
+        color: #fff;
+        cursor: pointer;
+        transition: transform 170ms ease, filter 170ms ease;
+      }
+
+      .tools button:hover,
+      .action-btn:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.1);
+      }
+
+      .count {
+        margin: 0.7rem 0 0;
+        font-size: 0.87rem;
+        color: var(--ink-soft);
+      }
+
+      .game-list {
+        --game-card-min-width: 180px;
+        --game-grid-columns: 2;
+        overflow: auto;
+        padding: 0.65rem;
+        display: grid;
+        grid-template-columns: repeat(var(--game-grid-columns), minmax(0, 1fr));
+        gap: 0.65rem;
+      }
+
+      .game-item {
+        appearance: none;
+        width: 100%;
+        min-width: 0;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.82);
+        text-align: left;
+        padding: 0.85rem 0.9rem;
+        cursor: pointer;
+        color: inherit;
+        display: grid;
+        gap: 0.55rem;
+        transform: translateX(-6px);
+        opacity: 0;
+        animation: slideIn 320ms ease forwards;
+      }
+
+      .game-item:hover,
+      .game-item:focus-visible {
+        background: rgba(14, 165, 164, 0.12);
+        outline: none;
+      }
+
+      .game-item.active {
+        background: linear-gradient(140deg, rgba(14, 165, 164, 0.22), rgba(255, 255, 255, 0.9));
+        border-color: rgba(14, 165, 164, 0.52);
+      }
+
+      .game-name {
+        font-size: 0.99rem;
+        font-weight: 600;
+      }
+
+      .game-meta {
+        display: grid;
+        gap: 0.18rem;
+        min-width: 0;
+      }
+
+      .game-thumb-wrap {
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        border-radius: 10px;
+        overflow: hidden;
+        background: linear-gradient(145deg, rgba(15, 30, 61, 0.2), rgba(14, 165, 164, 0.2));
+        border: 1px solid rgba(15, 30, 61, 0.1);
+      }
+
+      .game-thumb {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .game-path {
+        font-size: 0.8rem;
+        color: var(--ink-soft);
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .player {
+        display: none;
+        grid-template-rows: auto auto;
+        align-content: start;
+      }
+
+      .shell.has-player .player {
+        display: grid;
+        animation: rise 220ms ease both;
+      }
+
+      .player:not(.active) .player-top {
+        border-bottom: 0;
+      }
+
+      .player:not(.active) .player-actions {
+        display: none;
+      }
+
+      .player:not(.active) .screen {
+        display: none;
+      }
+
+      .player-top {
+        padding: 1rem;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .player-title {
+        margin: 0;
+        font-size: 1.2rem;
+        letter-spacing: 0.01em;
+      }
+
+      .player-actions {
+        display: flex;
+        gap: 0.55rem;
+      }
+
+      .player-actions .action-btn {
+        background: rgba(15, 30, 61, 0.94);
+      }
+
+      .player-actions .action-btn[disabled] {
+        opacity: 0.45;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .screen {
+        padding: 0.8rem;
+        display: flex;
+        justify-content: center;
+      }
+
+      .player.active .screen {
+        animation: rise 240ms ease both;
+      }
+
+      .screen-inner {
+        width: min(100%, calc(var(--player-max-height) * 16 / 9));
+        max-height: var(--player-max-height);
+        aspect-ratio: 16 / 9;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: linear-gradient(180deg, #0f1e3d, #131d34);
+        overflow: hidden;
+        position: relative;
+      }
+
+      .player.active .screen-inner {
+        animation: popIn 260ms ease both;
+      }
+
+      .empty {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        color: #f6f9ff;
+        padding: 1.5rem;
+      }
+
+      .empty strong {
+        display: block;
+        font-size: 1.15rem;
+        margin-bottom: 0.5rem;
+      }
+
+      iframe {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: #000;
+        opacity: 0;
+        transition: opacity 230ms ease;
+      }
+
+      iframe.ready {
+        opacity: 1;
+      }
+
+      .no-results {
+        padding: 1.3rem 1rem;
+        color: var(--ink-soft);
+        grid-column: 1 / -1;
+      }
+
+      .feedback-dialog[hidden] {
+        display: none;
+      }
+
+      .feedback-dialog {
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        display: grid;
+        place-items: center;
+        padding: 1rem;
+        background: rgba(8, 16, 34, 0.6);
+        backdrop-filter: blur(2px);
+      }
+
+      .feedback-card {
+        width: min(600px, 100%);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.98);
+        box-shadow: 0 22px 60px rgba(11, 22, 48, 0.28);
+        padding: 1rem;
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      .feedback-title {
+        margin: 0;
+        font-size: 1.2rem;
+      }
+
+      .feedback-copy {
+        margin: 0;
+        color: var(--ink-soft);
+        font-size: 0.92rem;
+      }
+
+      .feedback-input {
+        width: 100%;
+        min-height: 140px;
+        resize: vertical;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 0.75rem;
+        font: inherit;
+      }
+
+      .feedback-status {
+        margin: 0;
+        min-height: 1.2rem;
+        color: var(--ink-soft);
+        font-size: 0.88rem;
+      }
+
+      .feedback-status.error {
+        color: #ad2400;
+      }
+
+      .feedback-status.success {
+        color: #0e6f3f;
+      }
+
+      .feedback-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.55rem;
+      }
+
+      .feedback-actions .action-btn[disabled] {
+        opacity: 0.55;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes slideIn {
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      @keyframes popIn {
+        from {
+          opacity: 0;
+          transform: translateY(8px) scale(0.985);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @media (max-width: 1024px) {
+        .shell {
+          grid-template-columns: 1fr;
+        }
+
+        .shell.has-player {
+          grid-template-columns: 1fr;
+        }
+
+        .library,
+        .player {
+          min-height: unset;
+        }
+      }
+
+      @media (max-height: 920px) {
+        :root {
+          --player-max-height: 70vh;
+        }
+      }
+
+      @media (max-height: 760px) {
+        :root {
+          --player-max-height: 64vh;
+        }
+      }
+
+      .shell.has-player .game-list {
+        --game-card-min-width: 170px;
+        gap: clamp(12px, 1.8vw, 24px);
+        padding: clamp(12px, 1.8vw, 24px);
+        align-items: start;
+      }
+
+      @media (max-width: 640px) {
+        .page {
+          width: min(3200px, 100% - 1rem);
+        }
+
+        .top {
+          align-items: center;
+          flex-direction: row;
+        }
+
+        .top-actions {
+          width: 100%;
+          justify-content: flex-start;
+        }
+
+        .tools {
+          grid-template-columns: 1fr;
+        }
+
+        .player-top {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="top">
+        <div>
+          <h1 id="homeButton" class="brand" role="button" tabindex="0" aria-label="Back to menu">School Arcade Hub</h1>
+        </div>
+        <div class="top-actions">
+          <a
+            id="discordButton"
+            class="action-btn"
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+            hidden
+          >
+            Discord
+          </a>
+          <button id="feedbackButton" class="action-btn" type="button" disabled>Feedback</button>
+        </div>
+      </header>
+
+      <main class="shell">
+        <section class="library" aria-label="Game Library">
+          <div class="library-top">
+            <div class="library-sections" aria-label="Sections">
+              <button class="section-btn active" data-section="all" type="button">All Games</button>
+              <button class="section-btn" data-section="most-played" type="button">Most Played</button>
+            </div>
+            <div class="tools">
+              <input id="searchInput" type="search" placeholder="Search games..." autocomplete="off" />
+              <button id="refreshButton" type="button">Refresh</button>
+            </div>
+            <p id="countLabel" class="count">Loading game library...</p>
+          </div>
+          <div id="gameList" class="game-list"></div>
+        </section>
+
+        <section class="player" aria-label="Game Player">
+          <div class="player-top">
+            <h2 id="playerTitle" class="player-title">Select a game to play</h2>
+            <div class="player-actions">
+              <button id="newTabButton" class="action-btn" type="button" disabled>Open in tab</button>
+              <button id="closeButton" class="action-btn" type="button" disabled>Close</button>
+              <button id="fullscreenButton" class="action-btn" type="button" disabled>Fullscreen</button>
+            </div>
+          </div>
+          <div class="screen">
+            <div class="screen-inner">
+              <div id="emptyState" class="empty">
+                <div>
+                  <strong>Ready when you are.</strong>
+                  Pick a game from the left to launch it instantly.
+                </div>
+              </div>
+              <iframe
+                id="playerFrame"
+                title="Selected game"
+                allow="autoplay; fullscreen; gamepad"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-downloads"
+                scrolling="auto"
+                loading="eager"
+              ></iframe>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="feedbackDialog" class="feedback-dialog" hidden>
+      <div class="feedback-card" role="dialog" aria-modal="true" aria-labelledby="feedbackTitle">
+        <h2 id="feedbackTitle" class="feedback-title">Send feedback</h2>
+        <p class="feedback-copy">Tell us what broke or what we should improve.</p>
+        <textarea
+          id="feedbackInput"
+          class="feedback-input"
+          maxlength="1200"
+          placeholder="Example: Raldi's Crackhouse freezes after loading level 2..."
+        ></textarea>
+        <p id="feedbackStatus" class="feedback-status" aria-live="polite"></p>
+        <div class="feedback-actions">
+          <button id="feedbackCancelButton" class="action-btn" type="button">Cancel</button>
+          <button id="feedbackSubmitButton" class="action-btn" type="button">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const gameListElement = document.getElementById("gameList");
+      const countLabelElement = document.getElementById("countLabel");
+      const searchInputElement = document.getElementById("searchInput");
+      const refreshButtonElement = document.getElementById("refreshButton");
+      const sectionButtonElements = [...document.querySelectorAll(".section-btn")];
+      const playerTitleElement = document.getElementById("playerTitle");
+      const playerFrameElement = document.getElementById("playerFrame");
+      const emptyStateElement = document.getElementById("emptyState");
+      const fullscreenButtonElement = document.getElementById("fullscreenButton");
+      const newTabButtonElement = document.getElementById("newTabButton");
+      const closeButtonElement = document.getElementById("closeButton");
+      const homeButtonElement = document.getElementById("homeButton");
+      const discordButtonElement = document.getElementById("discordButton");
+      const feedbackButtonElement = document.getElementById("feedbackButton");
+      const feedbackDialogElement = document.getElementById("feedbackDialog");
+      const feedbackInputElement = document.getElementById("feedbackInput");
+      const feedbackStatusElement = document.getElementById("feedbackStatus");
+      const feedbackSubmitButtonElement = document.getElementById("feedbackSubmitButton");
+      const feedbackCancelButtonElement = document.getElementById("feedbackCancelButton");
+      const playerSectionElement = document.querySelector(".player");
+      const shellElement = document.querySelector(".shell");
+      const MAX_GAME_GRID_COLUMNS = 12;
+      const FRAME_SANDBOX =
+        "allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-downloads";
+
+      playerFrameElement.setAttribute("sandbox", FRAME_SANDBOX);
+
+      const state = {
+        allGames: [],
+        visibleGames: [],
+        playCountsBySlug: new Map(),
+        activeSection: "all",
+        sectionBaseTotal: 0,
+        selectedSlug: null,
+        iconVersion: 0,
+        feedbackEnabled: false,
+        discordInviteUrl: null,
+      };
+
+      function setPlayerActive(isActive) {
+        playerSectionElement?.classList.toggle("active", isActive);
+        shellElement?.classList.toggle("has-player", isActive);
+        updateGameGridColumns();
+      }
+
+      function updateGameGridColumns() {
+        if (!gameListElement) {
+          return;
+        }
+
+        const computed = window.getComputedStyle(gameListElement);
+        const minCardWidth = Number.parseFloat(computed.getPropertyValue("--game-card-min-width")) || 180;
+        const columnGap = Number.parseFloat(computed.columnGap || computed.gap) || 10;
+        const availableWidth = gameListElement.clientWidth;
+
+        if (!availableWidth) {
+          return;
+        }
+
+        const fittedColumns = Math.floor((availableWidth + columnGap) / (minCardWidth + columnGap));
+        const columns = Math.max(1, Math.min(MAX_GAME_GRID_COLUMNS, fittedColumns));
+        gameListElement.style.setProperty("--game-grid-columns", String(columns));
+      }
+
+      function normalizeHttpUrl(value) {
+        if (typeof value !== "string" || !value.trim()) {
+          return "";
+        }
+
+        try {
+          const parsed = new URL(value.trim());
+          if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+            return parsed.toString();
+          }
+        } catch (error) {
+          return "";
+        }
+
+        return "";
+      }
+
+      function setFeedbackStatus(message = "", tone = "") {
+        feedbackStatusElement.textContent = message;
+        feedbackStatusElement.classList.remove("error", "success");
+        if (tone === "error" || tone === "success") {
+          feedbackStatusElement.classList.add(tone);
+        }
+      }
+
+      function closeFeedbackDialog() {
+        feedbackDialogElement.hidden = true;
+        setFeedbackStatus("");
+      }
+
+      function openFeedbackDialog() {
+        if (!state.feedbackEnabled) {
+          return;
+        }
+
+        setFeedbackStatus("");
+        feedbackDialogElement.hidden = false;
+        feedbackInputElement.focus();
+      }
+
+      function applyPortalConfig() {
+        const discordInviteUrl = normalizeHttpUrl(state.discordInviteUrl || "");
+
+        if (discordInviteUrl) {
+          if (!discordButtonElement.isConnected) {
+            document.querySelector(".top-actions")?.prepend(discordButtonElement);
+          }
+          discordButtonElement.hidden = false;
+          discordButtonElement.href = discordInviteUrl;
+        } else if (discordButtonElement.isConnected) {
+          discordButtonElement.remove();
+        }
+
+        feedbackButtonElement.disabled = !state.feedbackEnabled;
+        feedbackButtonElement.title = state.feedbackEnabled ? "" : "Feedback is currently unavailable.";
+      }
+
+      async function loadPortalConfig() {
+        try {
+          const response = await fetch("/api/config", { cache: "no-store" });
+          if (!response.ok) {
+            throw new Error(`Failed to load portal config (${response.status})`);
+          }
+
+          const payload = await response.json();
+          state.discordInviteUrl = typeof payload.discordInviteUrl === "string" ? payload.discordInviteUrl : "";
+          state.feedbackEnabled = Boolean(payload.feedbackEnabled);
+        } catch (error) {
+          console.error(error);
+        } finally {
+          applyPortalConfig();
+        }
+      }
+
+      async function sendFeedback() {
+        if (!state.feedbackEnabled) {
+          return;
+        }
+
+        const message = feedbackInputElement.value.trim();
+        if (!message) {
+          setFeedbackStatus("Please type your feedback first.", "error");
+          return;
+        }
+
+        const selectedGame = state.allGames.find((game) => game.slug === state.selectedSlug);
+        feedbackSubmitButtonElement.disabled = true;
+        feedbackCancelButtonElement.disabled = true;
+        setFeedbackStatus("Sending feedback...");
+
+        try {
+          const response = await fetch("/api/feedback", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              message,
+              selectedSlug: selectedGame?.slug || "",
+              selectedGameName: selectedGame?.name || "",
+              pageUrl: window.location.href
+            })
+          });
+
+          const payload = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error(payload.message || `Failed to send feedback (${response.status}).`);
+          }
+
+          feedbackInputElement.value = "";
+          setFeedbackStatus("Thanks. Feedback sent.", "success");
+          window.setTimeout(closeFeedbackDialog, 850);
+        } catch (error) {
+          setFeedbackStatus(error?.message || "Could not send feedback right now.", "error");
+        } finally {
+          feedbackSubmitButtonElement.disabled = false;
+          feedbackCancelButtonElement.disabled = false;
+        }
+      }
+
+      function closeGameView() {
+        state.selectedSlug = null;
+        playerFrameElement.src = "";
+        playerFrameElement.onload = null;
+        playerFrameElement.classList.remove("ready");
+        playerTitleElement.textContent = "Select a game to play";
+        emptyStateElement.style.display = "grid";
+        setPlayerActive(false);
+        fullscreenButtonElement.disabled = true;
+        newTabButtonElement.disabled = true;
+        closeButtonElement.disabled = true;
+        newTabButtonElement.dataset.url = "";
+        renderGames();
+      }
+
+      function getPlayCount(slug) {
+        return Number(state.playCountsBySlug.get(slug) || 0);
+      }
+
+      function formatPlayCount(playCount) {
+        const safeCount = Math.max(0, Number(playCount) || 0);
+        return `${safeCount} ${safeCount === 1 ? "play" : "plays"}`;
+      }
+
+      function renderSectionButtons() {
+        for (const button of sectionButtonElements) {
+          button.classList.toggle("active", button.dataset.section === state.activeSection);
+        }
+      }
+
+      function getSectionBaseGames() {
+        if (state.activeSection === "most-played") {
+          return [...state.allGames]
+            .filter((game) => getPlayCount(game.slug) > 0)
+            .sort((a, b) => {
+              const playDiff = getPlayCount(b.slug) - getPlayCount(a.slug);
+              if (playDiff !== 0) {
+                return playDiff;
+              }
+              return a.name.localeCompare(b.name);
+            });
+        }
+
+        return [...state.allGames];
+      }
+
+      function applyEmbeddedGameLayoutFix({ aggressive = false } = {}) {
+        let frameWindow;
+        let frameDocument;
+
+        try {
+          frameWindow = playerFrameElement.contentWindow;
+          frameDocument = playerFrameElement.contentDocument;
+        } catch {
+          return;
+        }
+
+        if (!frameWindow || !frameDocument || !frameDocument.documentElement) {
+          return;
+        }
+
+        if (!frameDocument.getElementById("__arcadeEmbedStyle")) {
+          const styleElement = frameDocument.createElement("style");
+          styleElement.id = "__arcadeEmbedStyle";
+          styleElement.textContent = `
+            html, body {
+              margin: 0 !important;
+              padding: 0 !important;
+              min-width: 100% !important;
+              min-height: 100% !important;
+              background: #000 !important;
+            }
+            #sidebarad1,
+            #sidebarad2,
+            [id*="sidebarad"],
+            [class*="sidebarad"],
+            .adsbygoogle {
+              display: none !important;
+              visibility: hidden !important;
+            }
+          `;
+          frameDocument.head?.appendChild(styleElement);
+        }
+
+        const fitContent = () => {
+          let viewportWidth = frameWindow.innerWidth || frameDocument.documentElement.clientWidth;
+          let viewportHeight = frameWindow.innerHeight || frameDocument.documentElement.clientHeight;
+
+          if (!viewportWidth || !viewportHeight) {
+            return;
+          }
+
+          const targets = [
+            frameDocument.querySelector(".webgl-content"),
+            frameDocument.querySelector("#unity-container"),
+            frameDocument.querySelector("#unityContainer"),
+            frameDocument.querySelector("#gameContainer"),
+            frameDocument.querySelector("#canvas"),
+            frameDocument.querySelector("canvas")
+          ].filter(Boolean);
+
+          if (!targets.length) {
+            return;
+          }
+
+          const target = targets[0];
+          const targetRect = target.getBoundingClientRect();
+          const measuredWidth = target.width || targetRect.width;
+          const measuredHeight = target.height || targetRect.height;
+
+          if (!measuredWidth || !measuredHeight) {
+            return;
+          }
+
+          const shouldScale = aggressive || measuredWidth < viewportWidth * 0.92 || measuredHeight < viewportHeight * 0.92;
+          if (!shouldScale) {
+            return;
+          }
+
+          const scale = Math.min(viewportWidth / measuredWidth, viewportHeight / measuredHeight);
+          const clampedScale = Math.max(0.5, Math.min(scale, 2.5));
+          const styleTarget =
+            target.closest(".webgl-content, #unity-container, #unityContainer") || target;
+
+          styleTarget.style.position = "absolute";
+          styleTarget.style.left = "50%";
+          styleTarget.style.top = "50%";
+          styleTarget.style.margin = "0";
+          styleTarget.style.maxWidth = "none";
+          styleTarget.style.maxHeight = "none";
+          styleTarget.style.transformOrigin = "center center";
+          styleTarget.style.transform = `translate(-50%, -50%) scale(${clampedScale})`;
+          styleTarget.style.width = `${Math.round(measuredWidth)}px`;
+          styleTarget.style.height = `${Math.round(measuredHeight)}px`;
+        };
+
+        if (!frameWindow.__arcadeFitInitialized) {
+          frameWindow.__arcadeFitInitialized = true;
+          frameWindow.addEventListener("resize", () => frameWindow.requestAnimationFrame(fitContent), {
+            passive: true
+          });
+          const observer = new frameWindow.MutationObserver(() => frameWindow.requestAnimationFrame(fitContent));
+          observer.observe(frameDocument.documentElement, { childList: true, subtree: true });
+        }
+
+        frameWindow.requestAnimationFrame(fitContent);
+        frameWindow.setTimeout(fitContent, 120);
+        frameWindow.setTimeout(fitContent, 650);
+        frameWindow.setTimeout(fitContent, 1500);
+      }
+
+      function renderGames() {
+        const fragment = document.createDocumentFragment();
+
+        if (!state.visibleGames.length) {
+          gameListElement.innerHTML = '<p class="no-results">No games match this search.</p>';
+          updateGameGridColumns();
+          return;
+        }
+
+        for (const [index, game] of state.visibleGames.entries()) {
+          const baseIconUrl = game.iconUrl || `/games/${encodeURIComponent(game.slug)}/icon.png`;
+          const iconUrl = `${baseIconUrl}${baseIconUrl.includes("?") ? "&" : "?"}v=${encodeURIComponent(state.iconVersion || 0)}`;
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "game-item";
+          button.style.animationDelay = `${Math.min(index * 18, 320)}ms`;
+          button.dataset.slug = game.slug;
+          button.innerHTML = `
+            <span class="game-thumb-wrap">
+              <img class="game-thumb" src="${iconUrl}" alt="${game.name} icon" loading="lazy" decoding="async" />
+            </span>
+            <span class="game-meta">
+              <span class="game-name">${game.name}</span>
+              <span class="game-path">${formatPlayCount(getPlayCount(game.slug))}</span>
+            </span>
+          `;
+
+          if (game.slug === state.selectedSlug) {
+            button.classList.add("active");
+          }
+
+          button.addEventListener("click", () => {
+            selectGame(game.slug);
+          });
+
+          fragment.appendChild(button);
+        }
+
+        gameListElement.innerHTML = "";
+        gameListElement.appendChild(fragment);
+        updateGameGridColumns();
+      }
+
+      function renderCount() {
+        const label = state.activeSection === "most-played" ? "most played games" : "playable games";
+        countLabelElement.textContent = `${state.visibleGames.length} of ${state.sectionBaseTotal} ${label}`;
+      }
+
+      function updateListFilter() {
+        const query = searchInputElement.value.trim().toLowerCase();
+        const sectionBaseGames = getSectionBaseGames();
+        state.sectionBaseTotal = sectionBaseGames.length;
+
+        if (!query) {
+          state.visibleGames = [...sectionBaseGames];
+        } else {
+          state.visibleGames = sectionBaseGames.filter((game) => {
+            return (
+              game.name.toLowerCase().includes(query) ||
+              game.folder.toLowerCase().includes(query)
+            );
+          });
+        }
+
+        renderSectionButtons();
+        renderCount();
+        renderGames();
+      }
+
+      function selectGame(slug) {
+        const game = state.allGames.find((item) => item.slug === slug);
+        if (!game) {
+          return;
+        }
+
+        state.selectedSlug = slug;
+        playerTitleElement.textContent = game.name;
+        setPlayerActive(true);
+        emptyStateElement.style.display = "none";
+
+        playerFrameElement.classList.remove("ready");
+        playerFrameElement.src = game.entryUrl;
+        playerFrameElement.onload = () => {
+          applyEmbeddedGameLayoutFix({ aggressive: game.folder === "html" });
+          playerFrameElement.classList.add("ready");
+        };
+
+        fullscreenButtonElement.disabled = false;
+        newTabButtonElement.disabled = false;
+        closeButtonElement.disabled = false;
+        newTabButtonElement.dataset.url = game.entryUrl;
+
+        renderGames();
+        void logPlay(game.slug);
+
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      async function loadMostPlayed({ limit = 500, silent = false } = {}) {
+        try {
+          const response = await fetch(`/api/stats/most-played?limit=${encodeURIComponent(limit)}`, {
+            cache: "no-store"
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed to load most played: ${response.status}`);
+          }
+
+          const payload = await response.json();
+          const entries = Array.isArray(payload.games) ? payload.games : [];
+          state.playCountsBySlug = new Map(
+            entries.map((entry) => [entry.slug, Number(entry.playCount || 0)])
+          );
+
+          if (state.activeSection === "most-played") {
+            updateListFilter();
+          } else {
+            renderGames();
+          }
+        } catch (error) {
+          console.error(error);
+          if (!silent && state.activeSection === "most-played") {
+            updateListFilter();
+          }
+        }
+      }
+
+      async function logPlay(slug) {
+        try {
+          const response = await fetch("/api/stats/play", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ slug })
+          });
+
+          if (!response.ok) {
+            return;
+          }
+
+          await loadMostPlayed({ silent: true });
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      async function loadGames({ forceRefresh = false } = {}) {
+        const endpoint = forceRefresh ? "/api/games?refresh=1" : "/api/games";
+        countLabelElement.textContent = "Loading game library...";
+
+        try {
+          const response = await fetch(endpoint, { cache: "no-store" });
+          if (!response.ok) {
+            throw new Error(`Failed to load games: ${response.status}`);
+          }
+
+          const payload = await response.json();
+          state.allGames = payload.games.sort((a, b) => a.name.localeCompare(b.name));
+          state.iconVersion = payload.updatedAt || Date.now();
+          await loadMostPlayed({ silent: true });
+
+          if (state.selectedSlug && !state.allGames.some((game) => game.slug === state.selectedSlug)) {
+            closeGameView();
+          }
+
+          updateListFilter();
+        } catch (error) {
+          console.error(error);
+          gameListElement.innerHTML = '<p class="no-results">Could not load game list. Check server logs.</p>';
+          countLabelElement.textContent = "Failed to load game library.";
+        }
+      }
+
+      searchInputElement.addEventListener("input", updateListFilter);
+      refreshButtonElement.addEventListener("click", () => loadGames({ forceRefresh: true }));
+      sectionButtonElements.forEach((button) => {
+        button.addEventListener("click", () => {
+          const section = button.dataset.section || "all";
+          state.activeSection = section;
+          updateListFilter();
+        });
+      });
+
+      feedbackButtonElement?.addEventListener("click", openFeedbackDialog);
+      feedbackCancelButtonElement?.addEventListener("click", closeFeedbackDialog);
+      feedbackSubmitButtonElement?.addEventListener("click", () => {
+        void sendFeedback();
+      });
+
+      feedbackInputElement?.addEventListener("keydown", (event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "enter") {
+          event.preventDefault();
+          void sendFeedback();
+        }
+      });
+
+      feedbackDialogElement?.addEventListener("click", (event) => {
+        if (event.target === feedbackDialogElement) {
+          closeFeedbackDialog();
+        }
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !feedbackDialogElement.hidden) {
+          closeFeedbackDialog();
+        }
+      });
+
+      newTabButtonElement.addEventListener("click", () => {
+        const url = newTabButtonElement.dataset.url;
+        if (url) {
+          const openedWindow = window.open(url, "_blank", "noopener,noreferrer");
+          if (openedWindow) {
+            closeGameView();
+          }
+        }
+      });
+
+      closeButtonElement?.addEventListener("click", () => {
+        closeGameView();
+      });
+
+      fullscreenButtonElement.addEventListener("click", async () => {
+        if (playerFrameElement.requestFullscreen) {
+          await playerFrameElement.requestFullscreen();
+        }
+      });
+
+      homeButtonElement?.addEventListener("click", () => {
+        closeGameView();
+      });
+
+      homeButtonElement?.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          closeGameView();
+        }
+      });
+
+      if ("ResizeObserver" in window) {
+        const gameListResizeObserver = new ResizeObserver(() => {
+          updateGameGridColumns();
+        });
+        gameListResizeObserver.observe(gameListElement);
+      }
+      window.addEventListener("resize", updateGameGridColumns, { passive: true });
+
+      setPlayerActive(false);
+      loadPortalConfig();
+      loadGames();
+    </script>
+  </body>
+</html>

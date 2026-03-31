@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Live Feedback</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap");
+
+      :root {
+        --bg: #f3f6ff;
+        --ink: #0f1e3d;
+        --line: rgba(15, 30, 61, 0.16);
+        --card: rgba(255, 255, 255, 0.94);
+        --ok: #157f4b;
+        --warn: #aa2500;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Space Grotesk", "Segoe UI", sans-serif;
+        color: var(--ink);
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at 8% -12%, rgba(14, 165, 164, 0.22), transparent 44%),
+          radial-gradient(circle at 86% -8%, rgba(255, 122, 64, 0.2), transparent 38%),
+          linear-gradient(180deg, #f9fbff 0%, var(--bg) 100%);
+      }
+
+      .page {
+        width: min(1180px, 100% - 1rem);
+        margin: 0 auto;
+        padding: 1rem 0 2rem;
+      }
+
+      .top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+      }
+
+      .title {
+        margin: 0;
+        font-size: clamp(1.6rem, 4vw, 2.4rem);
+      }
+
+      .status-wrap {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        font-size: 0.95rem;
+      }
+
+      .dot {
+        width: 0.62rem;
+        height: 0.62rem;
+        border-radius: 999px;
+        background: #b04c2d;
+      }
+
+      .dot.live {
+        background: var(--ok);
+        box-shadow: 0 0 0 6px rgba(21, 127, 75, 0.14);
+      }
+
+      .tools {
+        margin-top: 0.75rem;
+        display: flex;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        background: rgba(15, 30, 61, 0.95);
+        color: #fff;
+        padding: 0.55rem 0.72rem;
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .btn.secondary {
+        color: var(--ink);
+        background: rgba(255, 255, 255, 0.9);
+      }
+
+      .meta {
+        margin: 0.6rem 0 0;
+        font-size: 0.9rem;
+        opacity: 0.86;
+      }
+
+      .list {
+        margin-top: 0.9rem;
+        display: grid;
+        gap: 0.65rem;
+      }
+
+      .item {
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--card);
+        padding: 0.8rem 0.85rem;
+        box-shadow: 0 7px 22px rgba(11, 22, 48, 0.08);
+      }
+
+      .item-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+      }
+
+      .when {
+        font-size: 0.86rem;
+        opacity: 0.75;
+      }
+
+      .mode {
+        font-size: 0.78rem;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 0.18rem 0.52rem;
+        background: rgba(255, 255, 255, 0.92);
+      }
+
+      .item-meta-right {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+      }
+
+      .delete-btn {
+        border: 1px solid rgba(170, 37, 0, 0.3);
+        border-radius: 9px;
+        background: rgba(170, 37, 0, 0.08);
+        color: #7a1d00;
+        padding: 0.18rem 0.48rem;
+        font: inherit;
+        font-size: 0.8rem;
+        cursor: pointer;
+      }
+
+      .delete-btn[disabled] {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .message {
+        margin: 0.65rem 0 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-size: 0.99rem;
+      }
+
+      .details {
+        margin: 0.58rem 0 0;
+        display: grid;
+        gap: 0.26rem;
+        font-size: 0.84rem;
+        opacity: 0.84;
+      }
+
+      .warning {
+        margin-top: 0.55rem;
+        color: var(--warn);
+        font-size: 0.84rem;
+        font-weight: 600;
+      }
+
+      .empty {
+        border: 1px dashed var(--line);
+        border-radius: 14px;
+        padding: 1rem;
+        text-align: center;
+        background: rgba(255, 255, 255, 0.74);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="top">
+        <h1 class="title">Live Feedback Inbox</h1>
+        <div class="status-wrap">
+          <span id="statusDot" class="dot"></span>
+          <span id="statusText">Connecting…</span>
+        </div>
+      </header>
+
+      <div class="tools">
+        <button id="notifyBtn" class="btn" type="button">Enable Notifications</button>
+        <button id="soundBtn" class="btn secondary" type="button">Sound: On</button>
+        <button id="clearBtn" class="btn secondary" type="button">Clear All</button>
+        <a class="btn secondary" href="/portal/">Back to Launcher</a>
+      </div>
+
+      <p id="metaLabel" class="meta">Waiting for feedback stream…</p>
+      <div id="list" class="list">
+        <div class="empty">No feedback yet.</div>
+      </div>
+    </div>
+
+    <script>
+      const listElement = document.getElementById("list");
+      const statusDotElement = document.getElementById("statusDot");
+      const statusTextElement = document.getElementById("statusText");
+      const metaLabelElement = document.getElementById("metaLabel");
+      const notifyButtonElement = document.getElementById("notifyBtn");
+      const soundButtonElement = document.getElementById("soundBtn");
+      const clearButtonElement = document.getElementById("clearBtn");
+      const MAX_RENDERED = 300;
+      const state = {
+        knownIds: new Set(),
+        unreadCount: 0,
+        soundEnabled: true,
+        stream: null,
+        deletingIds: new Set(),
+      };
+
+      function setConnectionState(isLive, text) {
+        statusTextElement.textContent = text;
+        statusDotElement.classList.toggle("live", isLive);
+      }
+
+      function setMetaLabel(text) {
+        metaLabelElement.textContent = text;
+      }
+
+      function formatDate(timestamp) {
+        const value = Number(timestamp) || Date.now();
+        return new Date(value).toLocaleString();
+      }
+
+      function updateTitle() {
+        if (state.unreadCount > 0) {
+          document.title = `(${state.unreadCount}) Live Feedback`;
+          return;
+        }
+
+        document.title = "Live Feedback";
+      }
+
+      function playPing() {
+        if (!state.soundEnabled) {
+          return;
+        }
+
+        try {
+          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const oscillator = audioCtx.createOscillator();
+          const gainNode = audioCtx.createGain();
+          oscillator.connect(gainNode);
+          gainNode.connect(audioCtx.destination);
+          oscillator.type = "sine";
+          oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+          gainNode.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.14, audioCtx.currentTime + 0.01);
+          gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.18);
+          oscillator.start();
+          oscillator.stop(audioCtx.currentTime + 0.2);
+        } catch {
+          // Audio notifications are optional.
+        }
+      }
+
+      function notifyDesktop(entry) {
+        if (!("Notification" in window) || Notification.permission !== "granted") {
+          return;
+        }
+
+        const body = String(entry.message || "").slice(0, 120);
+        try {
+          const notification = new Notification("New launcher feedback", { body });
+          setTimeout(() => notification.close(), 5000);
+        } catch {
+          // Best effort.
+        }
+      }
+
+      function toDetailLines(entry) {
+        const gameLabel =
+          entry.selectedGameName && entry.selectedSlug
+            ? `${entry.selectedGameName} (${entry.selectedSlug})`
+            : entry.selectedGameName || entry.selectedSlug || "Not provided";
+
+        return [
+          `Game: ${gameLabel}`,
+          `IP: ${entry.clientIp || "unknown"}`,
+          `Page: ${entry.pageUrl || "Not provided"}`
+        ];
+      }
+
+      function createEntryElement(entry) {
+        const container = document.createElement("article");
+        container.className = "item";
+        container.dataset.id = entry.id || "";
+
+        const top = document.createElement("div");
+        top.className = "item-top";
+
+        const when = document.createElement("div");
+        when.className = "when";
+        when.textContent = formatDate(entry.submittedAt);
+
+        const right = document.createElement("div");
+        right.className = "item-meta-right";
+
+        const mode = document.createElement("div");
+        mode.className = "mode";
+        mode.textContent = entry.mode || "unknown";
+
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "delete-btn";
+        deleteButton.type = "button";
+        deleteButton.textContent = "Delete";
+        deleteButton.disabled = state.deletingIds.has(entry.id);
+        deleteButton.addEventListener("click", () => {
+          void deleteFeedbackEntry(entry.id);
+        });
+
+        right.appendChild(mode);
+        right.appendChild(deleteButton);
+
+        top.appendChild(when);
+        top.appendChild(right);
+        container.appendChild(top);
+
+        const message = document.createElement("p");
+        message.className = "message";
+        message.textContent = entry.message || "";
+        container.appendChild(message);
+
+        const details = document.createElement("div");
+        details.className = "details";
+        for (const line of toDetailLines(entry)) {
+          const row = document.createElement("div");
+          row.textContent = line;
+          details.appendChild(row);
+        }
+        container.appendChild(details);
+
+        if (entry.warning) {
+          const warning = document.createElement("div");
+          warning.className = "warning";
+          warning.textContent = entry.warning;
+          container.appendChild(warning);
+        }
+
+        return container;
+      }
+
+      function trimRendered() {
+        while (listElement.children.length > MAX_RENDERED) {
+          const removedId = listElement.lastElementChild?.dataset?.id;
+          if (removedId) {
+            state.knownIds.delete(removedId);
+          }
+          listElement.removeChild(listElement.lastElementChild);
+        }
+      }
+
+      function ensureEmptyState() {
+        if (listElement.children.length > 0) {
+          return;
+        }
+
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "No feedback yet.";
+        listElement.appendChild(empty);
+      }
+
+      function removeFeedbackEntryFromView(entryId) {
+        if (!entryId) {
+          return;
+        }
+
+        const target = [...listElement.querySelectorAll("[data-id]")].find(
+          (node) => node.dataset.id === entryId
+        );
+        if (target) {
+          target.remove();
+        }
+        state.knownIds.delete(entryId);
+        state.deletingIds.delete(entryId);
+        ensureEmptyState();
+      }
+
+      function prependFeedback(entry, { shouldNotify = false } = {}) {
+        if (!entry || typeof entry !== "object") {
+          return;
+        }
+
+        const entryId = String(entry.id || "");
+        if (entryId && state.knownIds.has(entryId)) {
+          return;
+        }
+        if (entryId) {
+          state.knownIds.add(entryId);
+        }
+
+        if (listElement.querySelector(".empty")) {
+          listElement.innerHTML = "";
+        }
+        listElement.prepend(createEntryElement(entry));
+        trimRendered();
+
+        if (shouldNotify) {
+          if (document.hidden) {
+            state.unreadCount += 1;
+            updateTitle();
+          }
+          playPing();
+          notifyDesktop(entry);
+        }
+      }
+
+      async function deleteFeedbackEntry(entryId) {
+        if (!entryId || state.deletingIds.has(entryId)) {
+          return;
+        }
+
+        const shouldDelete = window.confirm("Delete this feedback entry?");
+        if (!shouldDelete) {
+          return;
+        }
+
+        state.deletingIds.add(entryId);
+        try {
+          const response = await fetch(`/api/feedback/${encodeURIComponent(entryId)}`, {
+            method: "DELETE"
+          });
+          if (!response.ok) {
+            const payload = await response.json().catch(() => ({}));
+            throw new Error(payload.message || `Delete failed (${response.status})`);
+          }
+          removeFeedbackEntryFromView(entryId);
+        } catch (error) {
+          console.error(error);
+          window.alert(error?.message || "Could not delete feedback.");
+        } finally {
+          state.deletingIds.delete(entryId);
+        }
+      }
+
+      async function clearAllFeedback() {
+        const shouldClear = window.confirm("Delete all feedback entries?");
+        if (!shouldClear) {
+          return;
+        }
+
+        clearButtonElement.disabled = true;
+        try {
+          const response = await fetch("/api/feedback", {
+            method: "DELETE"
+          });
+          if (!response.ok) {
+            const payload = await response.json().catch(() => ({}));
+            throw new Error(payload.message || `Clear failed (${response.status})`);
+          }
+          listElement.innerHTML = "";
+          state.knownIds.clear();
+          state.deletingIds.clear();
+          ensureEmptyState();
+          setMetaLabel("Feedback cleared.");
+        } catch (error) {
+          console.error(error);
+          window.alert(error?.message || "Could not clear feedback.");
+        } finally {
+          clearButtonElement.disabled = false;
+        }
+      }
+
+      async function loadInitialFeedback() {
+        const response = await fetch("/api/feedback/list?limit=200", {
+          cache: "no-store"
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to load feedback list (${response.status})`);
+        }
+
+        const payload = await response.json();
+        const entries = Array.isArray(payload.feedback) ? payload.feedback : [];
+        for (let index = entries.length - 1; index >= 0; index -= 1) {
+          prependFeedback(entries[index], { shouldNotify: false });
+        }
+        setMetaLabel(`${entries.length} recent entries loaded.`);
+      }
+
+      function connectStream() {
+        if (state.stream) {
+          state.stream.close();
+        }
+
+        const stream = new EventSource("/api/feedback/stream");
+        state.stream = stream;
+
+        stream.addEventListener("hello", (event) => {
+          setConnectionState(true, "Live");
+          try {
+            const data = JSON.parse(event.data);
+            if (data && data.feedbackMode) {
+              setMetaLabel(`Connected. Delivery mode: ${data.feedbackMode}`);
+            }
+          } catch {
+            // no-op
+          }
+        });
+
+        stream.addEventListener("feedback", (event) => {
+          try {
+            const entry = JSON.parse(event.data);
+            prependFeedback(entry, { shouldNotify: true });
+          } catch (error) {
+            console.error("Failed to parse live feedback event:", error);
+          }
+        });
+
+        stream.addEventListener("feedback_deleted", (event) => {
+          try {
+            const payload = JSON.parse(event.data);
+            removeFeedbackEntryFromView(payload.id);
+          } catch (error) {
+            console.error("Failed to parse feedback_deleted event:", error);
+          }
+        });
+
+        stream.addEventListener("feedback_cleared", () => {
+          listElement.innerHTML = "";
+          state.knownIds.clear();
+          state.deletingIds.clear();
+          ensureEmptyState();
+          setMetaLabel("Feedback cleared.");
+        });
+
+        stream.onopen = () => {
+          setConnectionState(true, "Live");
+        };
+
+        stream.onerror = () => {
+          setConnectionState(false, "Reconnecting…");
+        };
+      }
+
+      async function requestNotifications() {
+        if (!("Notification" in window)) {
+          notifyButtonElement.textContent = "Notifications Unsupported";
+          notifyButtonElement.disabled = true;
+          return;
+        }
+
+        const permission = await Notification.requestPermission();
+        if (permission === "granted") {
+          notifyButtonElement.textContent = "Notifications Enabled";
+          return;
+        }
+
+        notifyButtonElement.textContent = "Notifications Blocked";
+      }
+
+      notifyButtonElement.addEventListener("click", () => {
+        void requestNotifications();
+      });
+
+      soundButtonElement.addEventListener("click", () => {
+        state.soundEnabled = !state.soundEnabled;
+        soundButtonElement.textContent = `Sound: ${state.soundEnabled ? "On" : "Off"}`;
+      });
+
+      clearButtonElement.addEventListener("click", () => {
+        void clearAllFeedback();
+      });
+
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) {
+          state.unreadCount = 0;
+          updateTitle();
+        }
+      });
+
+      async function bootstrap() {
+        try {
+          await loadInitialFeedback();
+        } catch (error) {
+          console.error(error);
+          setMetaLabel("Could not load existing feedback history.");
+        }
+
+        connectStream();
+      }
+
+      bootstrap();
+    </script>
+  </body>
+</html>
