@@ -4,6 +4,12 @@ Open-source repo for [school.koren.rip](https://school.koren.rip).
 
 This project is a private school game launcher that auto-detects playable web games in this repo and serves them through one portal UI.
 
+## Disclaimer
+Raldi's Crackhouse won't work due to one of the files being over 100mb, please clone the repo using this link:
+```bash
+git clone https://git.koren.rip/koren/school-arcade.git
+```
+
 ## Launcher Features
 
 - Auto-scan for playable `.html` entries across top-level game folders.
